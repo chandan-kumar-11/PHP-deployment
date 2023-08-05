@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mystatefulset
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  serviceName: mysql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:latest
+        ports:
+        - containerPort: 3306
+          name: mysql
+        env:
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: mysql-pass
+          - name: DB_NAME
+            value: tms
+
+          - name: DB_USER
+            value: root
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        - name: mysql-initdb
+          mountPath: /docker-entrypoint-initdb.d/
+      volumes: 
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+      - name: mysql-initdb
+        configMap:
+          name: mysql-scripts
+          items:
+          - key: tms.sql
+            path: tms.sql
+          defaultMode: 0644
